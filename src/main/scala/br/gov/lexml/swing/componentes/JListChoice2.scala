@@ -1,6 +1,7 @@
 package br.gov.lexml.swing.componentes
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import java.awt.image
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import scala.annotation.implicitNotFound
@@ -16,6 +17,7 @@ import br.gov.lexml.swing.componentes.models.SetToListModelAdapter
 import br.gov.lexml.swing.componentes.models.ListChoiceActionApprover
 import javax.swing.Box
 import javax.swing.BoxLayout
+import javax.swing.ImageIcon
 import javax.swing.JComponent
 import javax.swing.JList
 import javax.swing.SwingUtilities
@@ -35,12 +37,15 @@ import br.gov.lexml.swing.componentes.models.DefaultGenListModel
 import br.gov.lexml.swing.componentes.models.NaturalComparator
 import br.gov.lexml.swing.componentes.models.GenListModelListener
 import scala.math
+import javax.swing.JPanel
+import java.awt.GridLayout
+import java.awt.BorderLayout
 
 class JListChoice2[T](domainModel: GenListModel[T], destModel: GenListModel[T],
   renderer: GenListCellRender[T],
   _approver: ListChoiceActionApprover[T])
-  extends Box(BoxLayout.X_AXIS) {
-
+  extends JPanel(new GridLayout) {
+  
   setApprover(_approver)
 
   var statusChecker = List[() ⇒ Unit]()
@@ -116,56 +121,65 @@ class JListChoice2[T](domainModel: GenListModel[T], destModel: GenListModel[T],
     destList.setCellRenderer(new GenListToListCellRendererAdapter(
       renderer))
   }
-
+  
   val buttonPanel = box(
     BoxLayout.Y_AXIS,
-    Some((4, 4, 4, 4)),
+    Some((4, 4, 4, 4)), 
     vertGlue(),
-    button(" >", "Adiciona item(s) selecionado(s).", invokeLater { addSelected() },
-      atLeastOneEnabledForAddition),
-    rigidColumn(16),
-    button(">>", "Adiciona todos os itens.", invokeLater {
+    grid(    
+    button("seta_direita.png", "Adiciona item(s) selecionado(s).", invokeLater { addSelected() },
+      atLeastOneEnabledForAddition),   
+    button("seta_direita_dupla.png", "Adiciona todos os itens.", invokeLater {
     	val l = sourceModel.elements.filter(approver.additionApproved).toList    	
     	def remove(x : Int) = sourceList.getSelectionModel().removeIndexInterval(x,x)
     	l.map(sourceModel.indexOf).foreach(remove)
     	//val newSelection = (sourceList.getSelectedIndices().toSet -- idxs).toArray(Array[Int]())
     	l.foreach(sourceModel.remove)
     }, atLeastOneEnabledInAllForAddition),
-    rigidColumn(32),
-    button(" <", "Remove item(s) selecionado(s).", invokeLater { removeSelected() },
+    rigidColumn(10),
+    button("seta_esquerda.png", "Remove item(s) selecionado(s).", invokeLater { removeSelected() },
       atLeastOneEnabledForRemoval),
-    rigidColumn(16),
-    button("<<", "Remove todos os itens.", invokeLater {
+    button("seta_esquerda_dupla.png", "Remove todos os itens.", invokeLater {
       val l = destModel.elements().toList.zipWithIndex.reverse.filter({
         case (el, idx) ⇒ approver.removalApproved(el, idx)
       }).map(_._2)
       def remove(x : Int) = destList.getSelectionModel().removeIndexInterval(x,x)
       l.foreach(remove)
       l.foreach(destModel.remove)
-    }, atLeastOneInAllEnabledForRemoval),
+    }, atLeastOneInAllEnabledForRemoval)), 
     vertGlue())
 
-  val sideButtonPanel = box(
+    val sideButtonPanel = box(
     BoxLayout.Y_AXIS,
-    Some(4, 4, 4, 4),
-    vertGlue(),
-    button("+", "Move item(s) selecionado(s) para cima.", invokeLater { move(false) }, {
+    Some(4, 4, 4, 4),   
+    grid(    
+    vertGlue(), 
+    rigidColumn(20),
+    button("seta_cima.png", "Move item(s) selecionado(s) para cima.", invokeLater { move(false) }, {
       () ⇒
         hasAtLeastOneIn(1, destModel.size(),
           destList.getSelectedIndices()) && atLeastOneMoveEnabled(false)
-    }),
-    rigidColumn(16),
-    button("-", "Move item(s) selecionado(s) para baixo.", invokeLater { move(true) }, {
+    }),    
+    button("seta_baixo.png", "Move item(s) selecionado(s) para baixo.", invokeLater { move(true) }, {
       () ⇒
         hasAtLeastOneIn(0, destModel.size() - 2,
           destList.getSelectedIndices()) && atLeastOneMoveEnabled(true)
-    }),
-    vertGlue())
-
-  add(new JScrollPane(sourceList))
-  add(buttonPanel)
-  add(new JScrollPane(destList))
-  add(sideButtonPanel)
+    })
+    ,
+    rigidColumn(20),
+    vertGlue()
+    ))
+  	   
+  val leftPanel = new JPanel(new BorderLayout)
+  leftPanel.add(new JScrollPane(sourceList), BorderLayout.CENTER)
+  leftPanel.add(buttonPanel, BorderLayout.EAST) 
+  add(leftPanel)
+  
+  val rightPanel = new JPanel(new BorderLayout)
+  rightPanel.add(new JScrollPane(destList), BorderLayout.CENTER)
+  rightPanel.add(sideButtonPanel, BorderLayout.EAST) 
+  add(rightPanel)
+  
   updateButtonStatus()
   val l = new ListSelectionListener {
     override def valueChanged(e: ListSelectionEvent) = invokeLater { updateButtonStatus() }
@@ -223,9 +237,11 @@ class JListChoice2[T](domainModel: GenListModel[T], destModel: GenListModel[T],
     case _ ⇒
   }
 
-  private def button(label: String, hint: String, action: ⇒ Unit,
-    conditions: (() ⇒ Boolean)*) = {
-    val b = new JButton(label)
+  private def button(nomeArquivo: String, hint: String, action: ⇒ Unit,
+    conditions: (() ⇒ Boolean)*) = {   
+    def imagem = new ImageIcon(getClass().getResource("/imagens/" + nomeArquivo))
+    val b = new JButton(imagem)    
+    b.setPreferredSize(new Dimension(23, 17))   
     b.setToolTipText(hint)
     b.addActionListener(actionListener { _ ⇒ action })
     statusChecker = conditions.foldLeft(statusChecker) {
@@ -233,14 +249,20 @@ class JListChoice2[T](domainModel: GenListModel[T], destModel: GenListModel[T],
     }
     b
   }
-
+  
   private def box(axis: Int, border: Option[(Int, Int, Int, Int)], comps: Component*) = {
     val bx = new Box(axis)
     for { (a, b, c, d) ← border } { bx.setBorder(BorderFactory.createEmptyBorder(a, b, c, d)) }
     comps.foreach(bx.add)
     bx
+  }  
+ 
+  private def grid(comps: Component*) = {
+    val grd = new JPanel(new GridLayout(0,1,2,2))
+    comps.foreach(grd.add)    
+    grd
   }
-
+     
   private def plugListeners() {
     sourceModel.addListener(sourceListener)
     destModel.addListener(destListener)

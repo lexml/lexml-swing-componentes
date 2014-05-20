@@ -5,6 +5,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.Dimension;
 import java.util.Arrays;
 
 import javax.swing.JButton;
@@ -12,6 +13,7 @@ import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.ImageIcon;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
@@ -37,15 +39,17 @@ public class JOpenList<T> extends JPanel {
 	private final JButton upButton;
 	private final JButton downButton;
 	private final JButton removeButton;
+	private final ImageIcon upImagem;
+	private final ImageIcon downImagem;	
 	
 	public JOpenList(JComponent editorComponent, ValueGetter<T> getter) {
-		this(new DefaultGenListModel<T>(),null,editorComponent,getter);
+		this(new DefaultGenListModel<T>(),null,editorComponent,getter);		
 	}
 	public JOpenList(GenListModel<T> model, GenListCellRender<T> renderer,
 			JComponent editorComponent,ValueGetter<T> getter) {		
 		setLayout(new GridBagLayout());
 		this.listModel = model;
-		list = new JList(new GenListToListModelAdapter<T>(model));
+		list = new JList(new GenListToListModelAdapter<T>(model));		
 		if(renderer != null) {
 			list.setCellRenderer(new GenListToListCellRendererAdapter<T>(renderer));
 		}
@@ -70,14 +74,15 @@ public class JOpenList<T> extends JPanel {
 		gbc2.fill = GridBagConstraints.BOTH;
 		add(list,gbc2);
 		
-		addButton = new JButton("+");
+		addButton = new JButton("+");	
+		addButton.setPreferredSize(new Dimension(23, 17)); 
 		addButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				addEditorValue();
-			}
+			}	
 		
-		});
+		});		
 		GridBagConstraints gbc3 = new GridBagConstraints();
 		gbc3.gridx = 1;
 		gbc3.gridy = 0;
@@ -85,12 +90,14 @@ public class JOpenList<T> extends JPanel {
 		gbc3.gridheight = 1;
 		gbc3.weightx = 0;
 		gbc3.weighty = 0;
-		gbc3.insets = new Insets(2,4,2,4);
+		gbc3.insets = new Insets(0,4,4,4);
 		gbc3.fill = GridBagConstraints.NONE;
 		gbc3.anchor = GridBagConstraints.WEST;
 		add(addButton,gbc3);
 		
-		upButton = new JButton("^");
+		upImagem = new ImageIcon(getClass().getResource("/imagens/seta_cima.png"));		
+		upButton = new JButton(upImagem);
+		upButton.setPreferredSize(new Dimension(23, 17));   
 		upButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -109,7 +116,9 @@ public class JOpenList<T> extends JPanel {
 		gbc4.anchor = GridBagConstraints.NORTH;
 		add(upButton,gbc4);
 		
-		downButton = new JButton("v");
+		downImagem = new ImageIcon(getClass().getResource("/imagens/seta_baixo.png"));		
+		downButton = new JButton(downImagem);
+		downButton.setPreferredSize(new Dimension(23, 17));   
 		downButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -129,6 +138,7 @@ public class JOpenList<T> extends JPanel {
 		add(downButton,gbc5);
 		
 		removeButton = new JButton("-");		
+		removeButton.setPreferredSize(new Dimension(23, 17));   
 		removeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -150,7 +160,7 @@ public class JOpenList<T> extends JPanel {
 		list.getSelectionModel().addListSelectionListener(new ListSelectionListener() {			
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
-				updateButtonStatus();
+				updateButtonStatus();				
 			}
 		});
 		
@@ -160,8 +170,8 @@ public class JOpenList<T> extends JPanel {
 			};
 			public void itemRemoved(int pos, T element) {
 				updateButtonStatus();
-			};
-		});
+			};			
+		});	
 	}
 	private void removeSelected() {
 		int[] selectedPos = list.getSelectedIndices();
@@ -216,7 +226,7 @@ public class JOpenList<T> extends JPanel {
 		addButton.setEnabled(enabled);
 	}
 	
-	private void updateButtonStatus() {		
+	public void updateButtonStatus() {		
 		removeButton.setEnabled(!list.getSelectionModel().isSelectionEmpty());		
 		upButton.setEnabled(hasAtLeastOneIn(1,listModel.size(),list.getSelectedIndices()));
 		downButton.setEnabled(hasAtLeastOneIn(0,listModel.size()-2,list.getSelectedIndices()));
@@ -224,12 +234,14 @@ public class JOpenList<T> extends JPanel {
 	
 	public void addEditorValue() {
 		T value = getter.get();
-		if(value != null) {
-			listModel.add(value);
+		if(value != null && !value.toString().trim().equals("")) {
+			listModel.add(value);	
 		}
 		
 	}
 	public GenListModel<T> getModel() {
+		setAddEnabled(false);
+		updateButtonStatus();
 		return listModel;
 	}
 	
@@ -244,31 +256,31 @@ public class JOpenList<T> extends JPanel {
 			public String get() {
 				String res = tf.getText();
 				if(res.isEmpty()) {
-					return null;
+					return null;					
 				} else {
 					tf.setText("");
 					return res;
 				}
 			}
-		});
+		});		
 		tf.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				olist.addEditorValue();
+				olist.addEditorValue();				
 			}
-		});
+		});	
 		tf.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) { }
 			@Override
 			public void insertUpdate(DocumentEvent e) {
-				olist.setAddEnabled(!tf.getText().isEmpty());
+				olist.setAddEnabled(!tf.getText().trim().isEmpty());
 			}
 			@Override
 			public void removeUpdate(DocumentEvent e) {
-				olist.setAddEnabled(!tf.getText().isEmpty());				
-			}
-		});
+				olist.setAddEnabled(!tf.getText().trim().isEmpty());				
+			}			
+		});				
 		return olist;
 	}
 		
