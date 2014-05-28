@@ -3,7 +3,7 @@
 	
 	<groupId>br.gov.lexml.swing</groupId>
 	<artifactId>lexml-swing-componentes</artifactId>
-	<version>1.0.13</version>
+	<version>1.0.14-SNAPSHOT</version>
 	
 	<properties>
 		<scala.version>2.10</scala.version>
@@ -16,10 +16,7 @@
 	</properties>
 
 	<scm>
-		<url>https://github.com/lexml/${project.artifactId}</url>
-		<developerConnection>scm:git:https://github.com/lexml/${project.artifactId}.git</developerConnection>
 		<connection>scm:git:https://github.com/lexml/${project.artifactId}.git</connection>
-		<tag>HEAD</tag>
 	</scm>
 	
 	<distributionManagement>
